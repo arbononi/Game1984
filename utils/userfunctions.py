@@ -44,7 +44,7 @@ def exibir_mensagem(mensagem: str, lin=lin_message, col=col_message, skip_line: 
 def exibir_conteudo(conteudo: str, lin: int=lin_message, col: int=col_message, colorir=False):
     posicionar_cursor(lin, col)
     if colorir:
-        print(f"\033[38;5;250;48;5;240m{conteudo}\033[0m")
+        print(f"\033[38;5;250;48;5;240m{conteudo}\033[0m", end="")
     else:
         print(conteudo, end="")
     finalizar_print()

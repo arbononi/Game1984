@@ -6,16 +6,15 @@
 
 import os
 import locale
-import yaml
 from os import system as clear_screen
-from models.scripts import Opcao, Script, Capitulo
 from utils import userfunctions
 from layouts.layouts import tela_principal, rosto, tela_capitulos, legenda_rosto
 from config import lin_terminal, col_terminal, lin_message
-from controllers.engine_texto_controller import EngineTexto
+from database.banco import Banco
+from controllers.narrativa_controller import NarrativaController
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-_app= None
+_banco = Banco()
 
 def set_size_terminal(lines=30, columns=100):
     os.system(f"mode con: cols={columns} lines={lines}")
@@ -24,46 +23,19 @@ def iniciar():
     userfunctions.desenhar_tela(layout=tela_principal, line_loop=4, stop_loop=lin_message - 1)
     str_data_atual = userfunctions.formatar_data(userfunctions.get_data_atual(), True, True)
     userfunctions.exibir_conteudo(str_data_atual, lin=2, col=104)
-    script = carregar_scripts("scripts/script_capitulo_1.yaml")
-    _app = EngineTexto(script=script)
-    _app.iniciar("capitulo1")
-    
-
-def carregar_scripts(path: str) -> Script:
-    with open(path, 'r', encoding='utf-8') as file:
-        raw_yaml = yaml.safe_load(file)
-
-    raiz = next(iter(raw_yaml))
-    dados = raw_yaml[raiz]
-
-    script = Script()
-
-    for capitulo_id, conteudo in dados.items():
-        linhas = {}
-        acoes = {}
-        opcoes = []
-
-        for chave, valor in conteudo.itens():
-            if chave.startswith('lin_'):
-                linhas[chave] = valor
-            elif chave.startswith('opcoes'):
-                for opc in valor:
-                    texto = opc['texto']
-                    acao = opc['acao']
-                    proximo = opc['proximo']
-                    opcoes.append(Opcao(texto=texto, acao=acao, proximo=proximo))
-            elif isinstance(valor, str):
-                acoes[chave] = valor
+    _ = userfunctions.exibir_mensagem("Aguarde... Carregando Roteiros...")
+    narrativa_controller = NarrativaController()
+    userfunctions.limpar_linha()
+    try:
+        _banco.carregar_arquivo("script_capitulo_1.yaml")
+        narrativa_controller.iniciar()
         
-        capitulo = Capitulo(
-            id=capitulo_id,
-            linhas=linhas,
-            acoes=acoes,
-            opcoes=opcoes
-        )
+    except FileNotFoundError as notFound:
+        _ = userfunctions.exibir_mensagem(notFound, wait_key=True)
+        return
+    except Exception as ex:
+        _ = userfunctions.exibir_mensagem(ex, wait_key=True)
 
-        script.capitulos[capitulo_id] = capitulo
-    return script
 
 if __name__ == "__main__":
     os.system("chcp 65001 > nul")
